@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EmpathyGym">
+<meta name="theme-color" content="#5B4B8A">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>EmpathyGym</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;overscroll-behavior:none}
+button{font-family:inherit}
+textarea{font-family:inherit}
+::-webkit-scrollbar{display:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .25s ease}
+.slide-up{animation:slideUp .3s ease}
+input,textarea{font-size:16px!important}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+
+<script type="text/babel">
+const {useState,useEffect,useCallback,useMemo} = React;
+
+// ═══ COLORS ═══
+const C={
+light:{bg:"#F6F7FB",sf:"#FFF",sv:"#EEF0F6",tx:"#1A1A1F",ts:"#6B6B78",tm:"#9B9BAA",pr:"#5B4B8A",pl:"#E8E4F0",op:"#FFF",ac:"#6FAF9A",er:"#C4889A",nb:"#FFF",nd:"#EAEAEF",cb:"#EAEAEF",cs:"0 2px 12px rgba(0,0,0,.06)",co:"#6FAF9A",cob:"#E4F2ED",cod:"#9ECDB9",ic:"#C4889A",icb:"#F5E0E6",icd:"#D4A0AF",ib:["#FFF4DC","#E0F3F3","#FBEBE8","#ECEBF6","#F5E0E6","#E0F2EB","#FBEFE2","#EEEBF5"]},
+dark:{bg:"#121215",sf:"#1C1C21",sv:"#2A2A32",tx:"#E4E4E8",ts:"#A0A0AE",tm:"#6E6E80",pr:"#CABEF6",pl:"#3D2E66",op:"#2A1F45",ac:"#6FAF9A",er:"#E0A0AF",nb:"#18181D",nd:"#2A2A32",cb:"#2E2E38",cs:"0 2px 12px rgba(0,0,0,.3)",co:"#6FAF9A",cob:"#1E322B",cod:"#4A8A6F",ic:"#E0A0AF",icb:"#2B1F3D",icd:"#6B5B96",ib:["#3A3020","#1E3232","#3A2623","#282840","#3A2028","#1E3228","#3A2E20","#2E2840"]}
+};
+
+// ═══ STRINGS ═══
+const S={
+ru:{tabs:["База","Тренажёры","Марафон"],tt:"Эмоциональная валидация",bk:"Назад",nx:"Далее",cn:"Продолжить",cd:"Пройдено",cm:"Готово",dy:"Дневник",rs:"↻",d:"день",of:"из",dn:"Марафон пройден!",ey:"лёгкий",md:"средний",hd:"сложный",fr:"друзья",sl:"я",cl:"коллеги",pt:"партнёр",al:"все",cn2:"Концепция",ins:"Инструкция",cs2:"кейсов"},
+en:{tabs:["Theory","Trainers","Marathon"],tt:"Emotional Validation",bk:"Back",nx:"Next",cn:"Continue",cd:"Completed",cm:"Done",dy:"Diary",rs:"↻",d:"day",of:"of",dn:"Marathon complete!",ey:"easy",md:"medium",hd:"hard",fr:"friends",sl:"self",cl:"colleagues",pt:"partner",al:"all",cn2:"Concept",ins:"Instructions",cs2:"cases"}
+};
+
+// ═══ THEORY ═══
+const TH={
+ru:[
+{t:"Что такое эмоциональная валидация?",i:"💡",b:"**Эмоциональная валидация** — это признание и принятие чувств другого человека. Когда мы валидируем эмоции, мы говорим: «Я вижу, что тебе сейчас тяжело, и это нормально — так чувствовать».\n\nМы не пытаемся **исправить**, **обесценить** или **переключить** человека. Мы просто даём понять, что его чувства имеют значение."},
+{t:"Почему это важно?",i:"🧠",b:"Когда человек чувствует, что его эмоции приняты, он быстрее успокаивается, больше доверяет собеседнику и чувствует себя **менее одиноким**.\n\nНа уровне нейробиологии: когда наши эмоции принимают, выделяется **окситоцин** и снижается **кортизол**. А **обесценивание** мозг воспринимает как отвержение — почти так же, как **физическую боль**."},
+{t:"Валидация в отношениях",i:"❤️",b:"В близких отношениях валидация — это **фундамент доверия**. Психолог **Джон Готтман** показал: пары, где партнёры отвечают на эмоциональные запросы друг друга с принятием, значительно более удовлетворены отношениями.\n\nГоттман называет это **«поворотом навстречу»** (turning toward).\n\nПары, которые практикуют валидацию, лучше справляются с конфликтами и чувствуют более глубокую **эмоциональную связь**."},
+{t:"6 уровней валидации (по Марше Линехан)",i:"📊",b:"1. **Присутствие** — быть рядом, слушать, не отвлекаясь.\n2. **Точное отражение** — пересказать своими словами.\n3. **Чтение между строк** — озвучить невысказанные чувства.\n4. **Понимание через историю** — «Учитывая то, что ты пережил, логично, что ты так себя чувствуешь».\n5. **Нормализация** — «Любой на твоём месте чувствовал бы то же самое».\n6. **Радикальная искренность** — относиться как к равному, без жалости."},
+{t:"Что НЕ является валидацией",i:"🚫",b:"• **Советы без запроса:** «А ты попробуй…»\n• **Обесценивание:** «Да ладно, не переживай», «Бывает и хуже»\n• **Переключение на себя:** «У меня тоже так было…»\n• **Токсичный позитив:** «Зато у тебя всё остальное хорошо!»\n• **Логические аргументы:** «Но ведь объективно…»\n• **Обвинение:** «Ну ты сам виноват»"},
+{t:"Но разве не лучше помочь советом?",i:"❓",b:"**Совет до валидации воспринимается как отвержение.** Когда человек делится переживанием, а в ответ слышит «а ты попробуй…» — он считывает: «твои чувства неважны».\n\n**Совет создаёт зависимость, а не опору.** Валидация помогает **опираться на себя**.\n\n**Совет — это ваше решение, не его.** Только он сам — эксперт в своей жизни.\n\nЧто делать? Сначала — **валидировать**. Потом спросить: «Тебе нужна помощь с решением или просто поддержка?»"},
+{t:"Загадки общения",i:"🧩",b:"**«Она не хочет решения — она хочет быть услышанной»**\nРефлекс «починить» несёт скрытое послание: «твоё чувство — помеха».\n\n**«Я хотел поддержать — а стало хуже»**\n«Не переживай». «Всё будет хорошо». Каждая из этих фраз — **инвалидация**.\n\n**«Мы согласны — но всё равно ссоримся»**\nНастоящая боль — «**меня не слышат**».\n\n**«Почему я так строг к себе?»**\nВнутренний критик — **усвоенный голос**. **Самовалидация** — навык, который можно освоить.\n\n**«Если я признаю чувства — значит я согласен?»**\nНет. Валидация — не про правоту. Это про **признание опыта**."},
+{t:"Как практиковать",i:"🧘",b:"1. **Пауза** перед ответом.\n2. Спросите себя: **«Что этот человек чувствует?»**\n3. **Назовите чувство:** «Похоже, тебе обидно.»\n4. **Примите безусловно:** «Это понятно.»\n5. **Спросите, как помочь** — вместо решений.\n\nВ **«Тренажёрах»** потренируетесь, а в **«Марафоне»** — в реальной жизни каждый день."}
+],
+en:[
+{t:"What is emotional validation?",i:"💡",b:"**Emotional validation** is acknowledging and accepting another person's feelings. We say: \"I see that you're having a hard time, and it's okay to feel that way.\"\n\nWe don't try to **fix**, **dismiss**, or **redirect**. We let them know their feelings matter."},
+{t:"Why does it matter?",i:"🧠",b:"When emotions are accepted, a person calms down faster, trusts more, and feels **less alone**.\n\nNeurobiologically: acceptance triggers **oxytocin** and lowers **cortisol**. **Invalidation** is processed by the brain almost like **physical pain**."},
+{t:"Validation in relationships",i:"❤️",b:"Validation is the **foundation of trust**. **John Gottman's** research showed: couples who respond to emotional bids with acceptance are significantly more satisfied.\n\nGottman calls this **\"turning toward\"**.\n\nCouples who practice validation handle conflicts better and feel deeper **emotional connection**."},
+{t:"6 Levels of Validation (Marsha Linehan)",i:"📊",b:"1. **Being present** — listening without distractions.\n2. **Accurate reflection** — paraphrasing.\n3. **Reading between the lines** — naming unspoken feelings.\n4. **Understanding through history** — \"Given what you've been through, it makes sense.\"\n5. **Normalizing** — \"Anyone would feel the same.\"\n6. **Radical genuineness** — treating as an equal."},
+{t:"What is NOT validation",i:"🚫",b:"• **Unsolicited advice:** \"You should try…\"\n• **Dismissing:** \"Don't worry\", \"Could be worse\"\n• **Making it about yourself:** \"Same happened to me…\"\n• **Toxic positivity:** \"At least everything else is great!\"\n• **Logical arguments:** \"But objectively…\"\n• **Blaming:** \"It's your own fault\""},
+{t:"Isn't it better to just give advice?",i:"❓",b:"**Advice before validation feels like rejection.** \"You should try…\" = \"your feelings don't matter.\"\n\n**Advice creates dependency.** Validation helps them **rely on themselves**.\n\n**Advice is your solution, not theirs.**\n\nInstead: **validate first**, then ask: \"Do you need help with a solution, or just support?\""},
+{t:"Communication puzzles",i:"🧩",b:"**\"She doesn't want a solution — she wants to be heard\"**\nThe fix-it reflex says: \"your feeling is an obstacle.\"\n\n**\"I tried to help — and made it worse\"**\n\"Don't worry.\" \"It'll be fine.\" Each is **invalidation**.\n\n**\"We agree — but we're still fighting\"**\nThe real pain: \"**I'm not being heard**.\"\n\n**\"Why am I so hard on myself?\"**\nThe inner critic is a **learned voice**. **Self-validation** is learnable.\n\n**\"If I acknowledge feelings — do I agree?\"**\nNo. Validation is about **acknowledging experience**."},
+{t:"How to practice",i:"🧘",b:"1. **Pause** before responding.\n2. Ask: **\"What is this person feeling?\"**\n3. **Name it:** \"It sounds like you're hurt.\"\n4. **Accept:** \"That makes sense.\"\n5. **Ask how to help** — don't offer solutions.\n\nIn **\"Trainers\"** you'll practice, and in **\"Marathon\"** — every day in real life."}
+]};
+
+// ═══ MARATHON 30 DAYS ═══
+const MD={
+ru:[
+{d:1,df:"ey",cx:"fr",tk:"Когда кто-то сегодня пожалуется — скажи одно предложение без совета. Просто назови что человек чувствует.",q1:"Получилось сдержать совет?",q2:"Что сказал вместо него?"},
+{d:2,df:"ey",cx:"sl",tk:"Вспомни последний разговор где тебе было плохо. Что хотел услышать — но не услышал?",q1:"Какая валидация была бы точной?",q2:"Легко ли было сформулировать?"},
+{d:3,df:"ey",cx:"cl",tk:"Сегодня в разговоре — дай человеку договорить до конца. Не заканчивай его мысль.",q1:"Было желание перебить?",q2:"В какой момент?"},
+{d:4,df:"ey",cx:"pt",tk:"Когда партнёр расскажет о своём дне — не комментируй, не советуй. Задай один уточняющий вопрос.",q1:"Какой вопрос задал?",q2:"Как отреагировал партнёр?"},
+{d:5,df:"ey",cx:"fr",tk:"Напиши другу — просто спроси «как ты?». Без повода.",q1:"Что он ответил?",q2:"Тебе было легко или неловко?"},
+{d:6,df:"ey",cx:"sl",tk:"Замечай когда хочешь сказать себе «не переживай». Вместо этого: «Мне сейчас тяжело — и это нормально».",q1:"Удалось заметить?",q2:"Что чувствовал после?"},
+{d:7,df:"ey",cx:"cl",tk:"Когда коллега жалуется — скажи «это реально тяжело» вместо «ну попробуй вот так».",q1:"Как он отреагировал?",q2:"Было ли желание посоветовать?"},
+{d:8,df:"ey",cx:"al",tk:"В любом разговоре — назови вслух чувство собеседника. Хотя бы раз.",q1:"Какое чувство назвал?",q2:"Угадал?"},
+{d:9,df:"ey",cx:"sl",tk:"Вечером вспомни один момент за день когда ты был эмоционален. Назови чувство.",q1:"Какое чувство это было?",q2:"Было ли оно ожидаемым?"},
+{d:10,df:"md",cx:"fr",tk:"Когда друг пожалуется — перескажи его слова. «Правильно ли я понимаю, что ты чувствуешь...?»",q1:"Удалось пересказать точно?",q2:"Что он ответил?"},
+{d:11,df:"md",cx:"pt",tk:"Когда партнёр расстроен — не пытайся поднять настроение. Просто: «Я рядом».",q1:"Как он отреагировал?",q2:"Было ли некомфортно молчать?"},
+{d:12,df:"md",cx:"sl",tk:"Когда начнёшь себя критиковать — переформулируй: «Я сделал ошибку» вместо «Я идиот».",q1:"Удалось остановить критику?",q2:"Как звучала новая фраза?"},
+{d:13,df:"md",cx:"cl",tk:"Замечай обесценивание от других. «Не переживай», «бывает хуже» — просто заметь.",q1:"Заметил обесценивание?",q2:"Что было сказано?"},
+{d:14,df:"md",cx:"fr",tk:"Попробуй уровень 3: назови чувство, которое человек не назвал сам.",q1:"Какое чувство назвал?",q2:"Попал?"},
+{d:15,df:"md",cx:"al",tk:"Сначала валидируй. Потом спроси: «Тебе нужна помощь с решением или просто поддержка?»",q1:"Что ответил человек?",q2:"Удивил ли ответ?"},
+{d:16,df:"md",cx:"sl",tk:"Напиши себе валидацию — как другу. «Ты столько делаешь. Понятно что устал».",q1:"Что написал?",q2:"Как себя почувствовал?"},
+{d:17,df:"md",cx:"pt",tk:"Когда партнёр расскажет о проблеме — не решай. Просто: «Это звучит тяжело».",q1:"Удалось не решать?",q2:"Как отреагировал партнёр?"},
+{d:18,df:"md",cx:"cl",tk:"Попробуй нормализацию: «Любой на твоём месте чувствовал бы то же самое».",q1:"Как отреагировал?",q2:"Было ли уместно?"},
+{d:19,df:"hd",cx:"fr",tk:"Когда друг злится — не защищай другого. Просто назови злость: «Тебя это реально бесит».",q1:"Удалось не защищать другого?",q2:"Что было самым сложным?"},
+{d:20,df:"hd",cx:"sl",tk:"Замечай «двойной удар» — злость на себя за злость. Назови второй слой.",q1:"Какой был второй слой?",q2:"Удалось отделить?"},
+{d:21,df:"hd",cx:"pt",tk:"При разногласии — скажи: «Я слышу тебя» прежде чем объяснять свою позицию.",q1:"Сказал?",q2:"Как изменился разговор?"},
+{d:22,df:"hd",cx:"cl",tk:"Когда коллега скажет «неудобное» — не меняй тему. Задай вопрос. Покажи что слышишь.",q1:"Что он рассказал?",q2:"Что ты почувствовал?"},
+{d:23,df:"hd",cx:"sl",tk:"Назови три чувства за день. Не хорошие-плохие. Просто три.",q1:"Какие три чувства?",q2:"Какое самое неожиданное?"},
+{d:24,df:"hd",cx:"fr",tk:"Замечай когда переключаешь на себя. Сегодня — оставайся в его истории.",q1:"Удалось остаться?",q2:"Что хотел рассказать о себе?"},
+{d:25,df:"hd",cx:"al",tk:"Попробуй «эхо с удивлением»: «Подожди — ты серьёзно три раза подряд?»",q1:"Как отреагировал?",q2:"Как звучало эхо?"},
+{d:26,df:"hd",cx:"sl",tk:"Когда поймаешь мысль «не должен так чувствовать» — замени на «я чувствую это — и это настоящее».",q1:"Какое чувство было «запрещённым»?",q2:"Удалось принять?"},
+{d:27,df:"hd",cx:"pt",tk:"Когда партнёр скажет «не знаю почему мне плохо» — не ищи причину. Скажи что плохо без причины — тоже плохо.",q1:"Как отреагировал?",q2:"Изменился ли разговор?"},
+{d:28,df:"hd",cx:"fr",tk:"Вспомни друга которого давно не слышал. Напиши — просто спроси как он.",q1:"Что рассказал?",q2:"Когда последний раз слушал его так?"},
+{d:29,df:"hd",cx:"sl",tk:"В разговоре где тебе больно — назови что чувствуешь прямо в разговоре.",q1:"Удалось назвать?",q2:"Что изменилось после?"},
+{d:30,df:"hd",cx:"al",tk:"Вспомни разговор где валидация получилась. Что сказал? Почему сработало?",q1:"Что изменилось в тебе за месяц?",q2:"Одним предложением."}
+],
+en:[
+{d:1,df:"ey",cx:"fr",tk:"When someone complains today — say one sentence without advice. Just name the feeling.",q1:"Did you hold back advice?",q2:"What did you say instead?"},
+{d:2,df:"ey",cx:"sl",tk:"Recall a conversation where you felt bad. What did you want to hear?",q1:"What validation would have been accurate?",q2:"Was it easy to put into words?"},
+{d:3,df:"ey",cx:"cl",tk:"In a conversation today — let the person finish. Don't complete their thought.",q1:"Did you feel the urge to interrupt?",q2:"At what moment?"},
+{d:4,df:"ey",cx:"pt",tk:"When your partner talks about their day — don't comment. Ask one clarifying question.",q1:"What question did you ask?",q2:"How did they react?"},
+{d:5,df:"ey",cx:"fr",tk:"Text a friend — just ask 'how are you?' No reason needed.",q1:"What did they say?",q2:"Was it easy or awkward?"},
+{d:6,df:"ey",cx:"sl",tk:"Notice when you want to say 'don't worry.' Instead: 'I'm having a hard time — and that's okay.'",q1:"Did you notice?",q2:"What did you feel after?"},
+{d:7,df:"ey",cx:"cl",tk:"When a colleague complains — say 'that's really tough' instead of giving advice.",q1:"How did they react?",q2:"Did you still want to advise?"},
+{d:8,df:"ey",cx:"al",tk:"In any conversation — name their feeling out loud. At least once.",q1:"What feeling did you name?",q2:"Were you right?"},
+{d:9,df:"ey",cx:"sl",tk:"Tonight, recall one emotional moment. Name the feeling. No judgment.",q1:"What was the feeling?",q2:"Was it expected?"},
+{d:10,df:"md",cx:"fr",tk:"When a friend complains — retell their words. 'Am I right that you feel...?'",q1:"Did you retell accurately?",q2:"What did they say?"},
+{d:11,df:"md",cx:"pt",tk:"When your partner is upset — don't cheer them up. Just: 'I'm here.'",q1:"How did they react?",q2:"Was it uncomfortable to be silent?"},
+{d:12,df:"md",cx:"sl",tk:"When you criticize yourself — rephrase: 'I made a mistake' instead of 'I'm an idiot.'",q1:"Did you stop the criticism?",q2:"How did the new sentence sound?"},
+{d:13,df:"md",cx:"cl",tk:"Notice invalidation from others. 'Don't worry', 'could be worse' — just notice.",q1:"Did you notice invalidation?",q2:"What was said?"},
+{d:14,df:"md",cx:"fr",tk:"Try level 3: name a feeling they didn't name themselves.",q1:"What feeling did you name?",q2:"Were you right?"},
+{d:15,df:"md",cx:"al",tk:"Validate first. Then ask: 'Do you need help with a solution or just support?'",q1:"What did they answer?",q2:"Did it surprise you?"},
+{d:16,df:"md",cx:"sl",tk:"Write yourself a validation message — as if to a friend.",q1:"What did you write?",q2:"How did it feel?"},
+{d:17,df:"md",cx:"pt",tk:"When your partner shares a problem — don't solve it. Just: 'That sounds tough.'",q1:"Did you manage not to solve it?",q2:"How did they react?"},
+{d:18,df:"md",cx:"cl",tk:"Try normalizing: 'Anyone in your place would feel the same.'",q1:"How did they react?",q2:"Did it feel appropriate?"},
+{d:19,df:"hd",cx:"fr",tk:"When a friend is angry at someone — don't defend the other person. Just name the anger.",q1:"Did you manage not to defend?",q2:"What was hardest?"},
+{d:20,df:"hd",cx:"sl",tk:"Notice the 'double blow' — angry at yourself for being angry. Name the second layer.",q1:"What was the second layer?",q2:"Did you separate it?"},
+{d:21,df:"hd",cx:"pt",tk:"In a disagreement — say 'I hear you' before explaining your position.",q1:"Did you say it?",q2:"How did the conversation change?"},
+{d:22,df:"hd",cx:"cl",tk:"When a colleague says something 'uncomfortable' — don't change the subject. Ask a question.",q1:"What did they share?",q2:"What did you feel?"},
+{d:23,df:"hd",cx:"sl",tk:"Name three feelings from the day. Not good or bad. Just three.",q1:"Which three?",q2:"Which was most unexpected?"},
+{d:24,df:"hd",cx:"fr",tk:"Notice when you redirect to yourself. Today — stay in their story.",q1:"Did you manage to stay?",q2:"What did you want to share?"},
+{d:25,df:"hd",cx:"al",tk:"Try 'echo with surprise': 'Wait — seriously, three times in a row?'",q1:"How did they react?",q2:"How did your echo sound?"},
+{d:26,df:"hd",cx:"sl",tk:"When you think 'I shouldn't feel this' — replace with 'I feel this — and it's real.'",q1:"What feeling was 'forbidden'?",q2:"Did you accept it?"},
+{d:27,df:"hd",cx:"pt",tk:"When your partner says 'I don't know why I feel bad' — don't look for a reason.",q1:"How did they react?",q2:"Did the conversation change?"},
+{d:28,df:"hd",cx:"fr",tk:"Think of a friend you haven't listened to. Call or text — just ask how they are.",q1:"What did they share?",q2:"When did you last listen like this?"},
+{d:29,df:"hd",cx:"sl",tk:"In a painful conversation — name what you feel right in the moment.",q1:"Did you manage to name it?",q2:"What changed after?"},
+{d:30,df:"hd",cx:"al",tk:"Recall one conversation where validation worked. What did you say? Why did it work?",q1:"What changed in you?",q2:"In one sentence."}
+]};
+
+// ═══ TRAINERS ═══
+const TR={
+ru:[
+{id:"v",tt:"Валидируй",ds:"Выбери валидирующий ответ",sm:"c",ins:["Прочитай ситуацию","Выбери валидирующий ответ","Неточный покажет, почему не подходит"],
+dt:[
+{s:"Лера пишет:\n«Настя опять отменила планы. Третий раз за месяц. Даже не извинилась».",o:[{t:"Три раза подряд — реально обидно. И без извинений — ещё неприятнее.",ok:1,g:"Валидация",e:"Называет чувство, не советует."},{t:"Может у Насти завал? Попробуй не обижаться.",g:"Запрет",e:"Запрещает чувство."},{t:"Перестань её звать. Зачем тебе такая подруга?",g:"Совет",e:"Решает за Леру."},{t:"У меня тоже так было. Все так делают, забей.",g:"Обесценивание",e:"Переключает на себя."}]},
+{s:"Соня (6 лет) плачет:\n«Маша сказала, не будет дружить! Все пошли играть с ней, а я одна сидела!»",o:[{t:"Не плачь! Маша завтра забудет!",g:"Обесценивание",e:"Отрицает чувство."},{t:"Может ты что-то сделала?",g:"Обвинение",e:"Перекладывает вину на ребёнка."},{t:"Тебе обидно. И одной сидеть — грустно, я понимаю.",ok:1,g:"Валидация",e:"Называет оба чувства."},{t:"У тебя полно друзей! Завтра поиграешь с Полиной!",g:"Отвлечение",e:"Минимизирует боль."}]},
+{s:"Даша:\n«Третий отказ подряд. Готовилась к каждому. Даже фидбэк не дают. Начинаю думать, что со мной что-то не так».",o:[{t:"Три это мало. У меня было 15 отказов!",g:"Обесценивание",e:"Минимизирует боль."},{t:"Попроси фидбэк, покажи резюме HR.",g:"Совет",e:"Перескакивает к решению."},{t:"С тобой всё ОК. Рынок сложный!",g:"Отрицание",e:"Отрицает сомнение."},{t:"Три раза и даже не сказали, что не так? Ну это вообще...",ok:1,g:"Валидация",e:"Эхо с удивлением."}]},
+{s:"Карина:\n«Мурка умерла вчера. 14 лет вместе. На работе: \"Это же кошка, заведи другую\"».",o:[{t:"Может правда котёнка завести?",g:"Совет",e:"Повторяет обесценивание."},{t:"У меня тоже собака умирала. Время лечит.",g:"Перетягивание",e:"Переключает на себя."},{t:"14 лет — огромная часть жизни. Боль глубокая.",ok:1,g:"Валидация",e:"Признаёт масштаб потери."},{t:"Они не со зла. Попробуй не обижаться.",g:"Защита",e:"Оправдывает обидчиков."}]},
+{s:"Настя из Берлина:\n«Полгода тут, друзей ноль. По вечерам одна, плачу».",o:[{t:"Полгода мало. Запишись куда-нибудь.",g:"Совет",e:"Минимизирует, советует."},{t:"Одной каждый вечер в чужой стране — пронзительное одиночество. Плакать — нормально.",ok:1,g:"Валидация",e:"Называет чувство, нормализует."},{t:"Ты же сама хотела переехать!",g:"Упрёк",e:"Выбор — не аргумент против чувств."},{t:"Пробовала русские группы в телеграме?",g:"Совет",e:"Решает вместо признания."}]}
+]},
+{id:"fi",tt:"Найди инвалидацию",ds:"Найди обесценивающий ответ",sm:"i",ins:["Прочитай ситуацию","Найди обесценивающий ответ","Остальные три — валидация"],
+dt:[
+{s:"Марина:\n«Подругу повысили. Поздравила. Дома плакала. Потому что завидую. И противно от себя».",o:[{t:"Зависть — сигнал. Используй как мотивацию.",inv:1,e:"Рефрейминг. Не признаёт чувство."},{t:"Радоваться и завидовать — не делает тебя плохой.",e:"Оба чувства без осуждения."},{t:"Отвращение к себе за зависть — отдельная тяжесть.",e:"Признаёт стыд."},{t:"Улыбалась, а дома плакала. Это одиноко.",e:"Называет одиночество."}]},
+{s:"Саша:\n«Опять сорвался из-за ерунды. Жена спросила про ужин — я начал орать. Какой мудак».",o:[{t:"Сорвался — и мне тяжело. Я не мудак — устал и не справился.",e:"Разделяет поступок и личность."},{t:"Все иногда срываются. Купи цветов, наладится.",inv:1,e:"Обесценивает."},{t:"Тяжело знать что был неправ и злиться на себя.",e:"Два слоя."},{t:"Сорвался — действие. «Мудак» — приговор. Не одно и то же.",e:"Разделяет факт от ярлыка."}]}
+]},
+{id:"vi",tt:"Валидация или потакание",ds:"Отличи валидацию от потакания",sm:"c",
+cn:"Потакание поддерживает действие, а не чувство. Валидация говорит «тебе больно» — потакание говорит «делай так».",
+ins:["Прочитай ситуацию","Выбери валидацию — не потакание","Потакание поддерживает действие"],
+dt:[
+{s:"Игорь:\n«Провалил презентацию. Коллега написал \"бывает\" — хочу ответить чтобы заткнулся».",o:[{t:"Провалиться когда все смотрят — отдельная боль.",ok:1,e:"Признаёт боль."},{t:"Напиши ему, нечего было лезть.",e:"Поддерживает действие."},{t:"Правильно, пусть знает.",e:"Поддерживает злость."}]},
+{s:"Света:\n«Мама третий год болеет. Всё бросила. Сегодня сказала что мало забочусь. Хочу уехать».",o:[{t:"Уезжай, имеешь право.",e:"Поддерживает действие."},{t:"Три года отдавать всё — и услышать что мало. Больно.",ok:1,e:"Признаёт боль."},{t:"Пусть побудет одна — поймёт.",e:"Мотив мести."}]},
+{s:"Ника:\n«Подруга потеряла работу — все носятся. А я полгода в депрессии, никто не спрашивает».",o:[{t:"Пиши друзьям, имеешь право.",e:"Поддерживает действие."},{t:"Люди не замечают, надо сказать.",e:"Поддерживает с обоснованием."},{t:"Полгода плохо — и быть невидимой. Обидно.",ok:1,e:"Признаёт боль невидимости."}]}
+]}
+],
+en:[
+{id:"v",tt:"Validate",ds:"Pick the validating response",sm:"c",ins:["Read the situation","Pick the validating response","Wrong answers show why they don't fit"],
+dt:[
+{s:"Lera texts:\n\"Nastya cancelled again. Third time this month. Didn't even apologize.\"",o:[{t:"Three times — that's really hurtful. Without apology — even worse.",ok:1,g:"Validation",e:"Names feeling, no advice."},{t:"Maybe Nastya's swamped? Don't take it personally.",g:"Feeling ban",e:"Bans the feeling."},{t:"Just stop inviting her.",g:"Advice",e:"Decides for Lera."},{t:"Same happened to me. Everyone does it, let it go.",g:"Dismissal",e:"Shifts to self."}]},
+{s:"Sonya (6) crying:\n\"Masha won't be my friend! Everyone played with her, I sat alone!\"",o:[{t:"Don't cry! Masha will forget by tomorrow!",g:"Dismissal",e:"Denies feeling."},{t:"Did you do something to Masha?",g:"Blame",e:"Blames the child."},{t:"You're upset Masha said that. Sitting alone — that's really sad.",ok:1,g:"Validation",e:"Names both feelings."},{t:"You have plenty of friends! Play with Polina tomorrow!",g:"Distraction",e:"Minimizes pain."}]},
+{s:"Dasha:\n\"Third rejection. Prepared for each. No feedback, just 'not a fit.' Starting to think something's wrong with me.\"",o:[{t:"Three is nothing. I got 15 rejections!",g:"Dismissal",e:"Minimizes."},{t:"Ask for feedback. Show your resume to HR.",g:"Advice",e:"Jumps to solution."},{t:"Nothing's wrong with you! Market is tough!",g:"Denial",e:"Denies doubt."},{t:"Three rejections and they didn't even say what's wrong? That's just...",ok:1,g:"Validation",e:"Echo with surprise."}]},
+{s:"Karina:\n\"Murka died yesterday. 14 years together. At work: 'It's just a cat, get a new one.'\"",o:[{t:"Maybe getting a kitten would help?",g:"Advice",e:"Repeats dismissal."},{t:"My dog died too. Time heals.",g:"Hijacking",e:"Shifts to self."},{t:"14 years — huge part of your life. Of course the pain runs deep.",ok:1,g:"Validation",e:"Acknowledges loss."},{t:"They don't mean harm. Don't be upset.",g:"Defense",e:"Justifies offenders."}]},
+{s:"Nastya in Berlin:\n\"Six months, zero friends. Every evening alone, crying.\"",o:[{t:"Six months isn't long. Sign up for yoga.",g:"Advice",e:"Minimizes, advises."},{t:"Alone every evening in a foreign country — piercing loneliness. Crying makes sense.",ok:1,g:"Validation",e:"Names feeling, normalizes."},{t:"You wanted to move, remember!",g:"Reproach",e:"Choice isn't argument against feelings."},{t:"Try Russian-speaking groups on Telegram.",g:"Advice",e:"Solves instead of acknowledging."}]}
+]},
+{id:"fi",tt:"Find Invalidation",ds:"Spot the dismissive response",sm:"i",ins:["Read the situation","Find the dismissive response","Other three are genuine validation"],
+dt:[
+{s:"Marina:\n\"My friend got promoted. I smiled. Cried at home. Because I'm jealous. And disgusted with myself.\"",o:[{t:"Jealousy is a signal. Use it as motivation.",inv:1,e:"Reframing. Doesn't acknowledge."},{t:"Being happy and jealous doesn't make you bad.",e:"Both feelings, no judgment."},{t:"Self-disgust for jealousy — that's a separate heaviness.",e:"Acknowledges shame."},{t:"You smiled and congratulated — and cried at home. That's lonely.",e:"Names loneliness."}]}
+]},
+{id:"vi",tt:"Validation or Indulgence",ds:"Tell validation from indulgence",sm:"c",
+cn:"Indulgence supports the action, not the feeling. Validation says 'you're in pain' — indulgence says 'you're right, do it.'",
+ins:["Read the situation","Pick validation — not indulgence","Indulgence supports action, not feeling"],
+dt:[
+{s:"Igor:\n\"Bombed the presentation. Colleague texted 'it happens' — I want to shut him up.\"",o:[{t:"Failing when everyone watches — that's its own pain.",ok:1,e:"Acknowledges pain."},{t:"Text him back, he had no business.",e:"Supports action."},{t:"Exactly, let him know.",e:"Supports anger."}]},
+{s:"Sveta:\n\"Mom's been sick 3 years. I dropped everything. Today she said I'm not doing enough.\"",o:[{t:"Go — you deserve a break.",e:"Supports action."},{t:"Three years giving everything — and hearing it's not enough. Painful.",ok:1,e:"Acknowledges pain."},{t:"Let her be alone, she'll understand.",e:"Revenge motive."}]}
+]}
+]};
+
+// ═══ STORAGE ═══
+const ld=(k,d)=>{try{const v=localStorage.getItem("eg_"+k);return v?JSON.parse(v):d}catch{return d}};
+const sv=(k,v)=>{try{localStorage.setItem("eg_"+k,JSON.stringify(v))}catch{}};
+
+// ═══ MARKDOWN ═══
+function Md({text,pr}){
+  if(!text)return null;
+  return text.split("\n").map((ln,i)=>{
+    if(!ln.trim())return React.createElement("div",{key:i,style:{height:10}});
+    const p=[];let r=ln,x=0;
+    while(r.length>0){
+      const m=r.match(/\*\*(.+?)\*\*/);
+      if(m){
+        if(m.index>0)p.push(React.createElement("span",{key:x++},r.slice(0,m.index)));
+        p.push(React.createElement("strong",{key:x++,style:{color:pr,fontWeight:600}},m[1]));
+        r=r.slice(m.index+m[0].length);
+      }else{p.push(React.createElement("span",{key:x++},r));break;}
+    }
+    return React.createElement("p",{key:i,style:{margin:"3px 0",lineHeight:1.6,fontSize:15}},p);
+  });
+}
+
+// ═══ APP ═══
+function App(){
+  const[lang,setLang]=useState(()=>ld("lang","ru"));
+  const[dark,setDark]=useState(()=>ld("dark",false));
+  const[tab,setTab]=useState(0);
+  const c=dark?C.dark:C.light;
+  const s=S[lang];
+
+  useEffect(()=>{sv("lang",lang)},[lang]);
+  useEffect(()=>{sv("dark",dark);document.body.style.background=c.bg},[dark,c.bg]);
+
+  const ti=["📖","🏋️","📅"];
+
+  return React.createElement("div",{style:{background:c.bg,color:c.tx,minHeight:"100vh",maxWidth:480,margin:"0 auto",paddingBottom:80,transition:"background .3s"}},
+    tab===0&&React.createElement(Theory,{lang,c,s,dark,setDark,setLang}),
+    tab===1&&React.createElement(Trainer,{lang,c,s}),
+    tab===2&&React.createElement(Marathon,{lang,c,s}),
+    React.createElement("nav",{style:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:c.nb,borderTop:"1px solid "+c.nd,display:"flex",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)"}},
+      s.tabs.map((l,i)=>React.createElement("button",{key:i,onClick:()=>setTab(i),style:{flex:1,padding:"10px 0 8px",background:"none",border:"none",color:tab===i?c.pr:c.tm,fontSize:11,fontWeight:tab===i?600:400,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}},
+        React.createElement("span",{style:{fontSize:20}},ti[i]),l
+      ))
+    )
+  );
+}
+
+// ═══ THEORY ═══
+function Theory({lang,c,s,dark,setDark,setLang}){
+  const[open,setOpen]=useState({});
+  const sec=TH[lang];
+  return React.createElement("div",{style:{padding:"20px 16px"}},
+    React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}},
+      React.createElement("div",null,
+        React.createElement("h1",{style:{fontSize:24,fontWeight:700,color:c.pr,margin:0}},s.tt),
+        React.createElement("p",{style:{fontSize:13,color:c.ts,margin:"4px 0 0"}},"EmpathyGym")
+      ),
+      React.createElement("div",{style:{display:"flex",gap:8}},
+        React.createElement("button",{onClick:()=>setLang(lang==="ru"?"en":"ru"),style:{padding:"6px 12px",borderRadius:10,border:"1px solid "+c.cb,background:c.sf,color:c.tx,fontSize:13,fontWeight:500,cursor:"pointer"}},lang==="ru"?"EN":"RU"),
+        React.createElement("button",{onClick:()=>setDark(!dark),style:{padding:"6px 12px",borderRadius:10,border:"1px solid "+c.cb,background:c.sf,color:c.tx,fontSize:13,cursor:"pointer"}},dark?"☀️":"🌙")
+      )
+    ),
+    sec.map((sc,i)=>React.createElement("div",{key:i,style:{marginBottom:12,borderRadius:14,background:c.sf,boxShadow:c.cs,overflow:"hidden",border:"1px solid "+c.cb}},
+      React.createElement("button",{onClick:()=>setOpen({...open,[i]:!open[i]}),style:{width:"100%",padding:"14px 16px",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}},
+        React.createElement("span",{style:{width:40,height:40,borderRadius:12,background:c.ib[i],display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}},sc.i),
+        React.createElement("span",{style:{flex:1,fontSize:15,fontWeight:600,color:c.tx,lineHeight:1.3}},sc.t),
+        React.createElement("span",{style:{fontSize:18,color:c.tm,transform:open[i]?"rotate(180deg)":"none",transition:"transform .2s"}},"▾")
+      ),
+      open[i]&&React.createElement("div",{style:{padding:"0 16px 16px"},className:"fade-in"},React.createElement(Md,{text:sc.b,pr:c.pr}))
+    ))
+  );
+}
+
+// ═══ TRAINER ═══
+function Trainer({lang,c,s}){
+  const[act,setAct]=useState(null);
+  const[ci,setCi]=useState(0);
+  const[fb,setFb]=useState(null);
+  const[done,setDone]=useState(()=>ld("tp",{}));
+  const[showIns,setShowIns]=useState(true);
+  const trs=TR[lang];
+
+  useEffect(()=>{sv("tp",done)},[done]);
+
+  const pick=(tr,oi)=>{
+    if(fb)return;
+    const o=tr.dt[ci].o[oi];
+    if(tr.sm==="i"){
+      setFb(o.inv?{ok:1,i:oi}:{ok:0,i:oi,e:o.e});
+    }else{
+      setFb(o.ok?{ok:1,i:oi}:{ok:0,i:oi,e:o.e});
+    }
+  };
+
+  const next=()=>{
+    const tr=trs.find(t=>t.id===act);
+    if(ci+1>=tr.dt.length){setDone(p=>({...p,[act]:1}));setAct(null);setCi(0);}
+    else setCi(ci+1);
+    setFb(null);
+  };
+
+  if(!act){
+    const icons=["🎯","🔍","⚖️","🧅","🧠"];
+    return React.createElement("div",{style:{padding:"20px 16px"}},
+      React.createElement("h1",{style:{fontSize:24,fontWeight:700,color:c.pr,margin:"0 0 16px"}},s.tabs[1]),
+      trs.map((t,i)=>React.createElement("div",{key:t.id,onClick:()=>{setAct(t.id);setCi(0);setFb(null);setShowIns(true)},style:{padding:16,marginBottom:12,borderRadius:14,background:c.sf,border:"1px solid "+c.cb,boxShadow:c.cs,cursor:"pointer"}},
+        React.createElement("div",{style:{display:"flex",alignItems:"center",gap:12}},
+          React.createElement("span",{style:{width:44,height:44,borderRadius:12,background:c.ib[i%8],display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}},icons[i]||"📝"),
+          React.createElement("div",{style:{flex:1}},
+            React.createElement("div",{style:{fontWeight:600,fontSize:16,color:c.tx}},t.tt),
+            React.createElement("div",{style:{fontSize:13,color:c.ts,marginTop:2}},t.ds),
+            React.createElement("div",{style:{fontSize:12,color:c.tm,marginTop:4}},t.dt.length+" "+s.cs2+(done[t.id]?" ✓":""))
+          ),
+          React.createElement("span",{style:{color:c.tm,fontSize:20}},"›")
+        )
+      ))
+    );
+  }
+
+  const tr=trs.find(t=>t.id===act);
+  if(!tr||!tr.dt[ci])return null;
+  const cas=tr.dt[ci];
+
+  if(showIns){
+    return React.createElement("div",{style:{padding:"20px 16px"}},
+      React.createElement("button",{onClick:()=>{setAct(null);setShowIns(true)},style:{background:"none",border:"none",color:c.pr,fontSize:15,fontWeight:500,cursor:"pointer",padding:0,marginBottom:16}},"← "+s.bk),
+      React.createElement("h2",{style:{fontSize:22,fontWeight:700,color:c.pr,margin:"0 0 8px"}},tr.tt),
+      tr.cn&&React.createElement("div",{style:{padding:14,borderRadius:12,background:c.pl,marginBottom:16,fontSize:14,lineHeight:1.6,color:c.tx}},
+        React.createElement("strong",{style:{color:c.pr}},s.cn2+": "),tr.cn
+      ),
+      React.createElement("div",{style:{padding:14,borderRadius:12,background:c.sf,border:"1px solid "+c.cb,marginBottom:16}},
+        React.createElement("strong",{style:{color:c.pr,fontSize:14}},s.ins+":"),
+        tr.ins.map((st,i)=>React.createElement("div",{key:i,style:{display:"flex",alignItems:"center",gap:10,marginTop:10}},
+          React.createElement("span",{style:{width:26,height:26,borderRadius:"50%",background:c.pl,color:c.pr,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:600,flexShrink:0}},i+1),
+          React.createElement("span",{style:{fontSize:14,color:c.tx}},st)
+        ))
+      ),
+      React.createElement("button",{onClick:()=>setShowIns(false),style:{width:"100%",padding:14,borderRadius:12,background:c.pr,color:c.op,border:"none",fontSize:16,fontWeight:600,cursor:"pointer"}},s.cn+" →")
+    );
+  }
+
+  return React.createElement("div",{style:{padding:"20px 16px"},className:"slide-up"},
+    React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}},
+      React.createElement("button",{onClick:()=>{setAct(null);setShowIns(true)},style:{background:"none",border:"none",color:c.pr,fontSize:15,fontWeight:500,cursor:"pointer",padding:0}},"← "+s.bk),
+      React.createElement("span",{style:{fontSize:13,color:c.ts,fontWeight:500}},(ci+1)+" / "+tr.dt.length)
+    ),
+    React.createElement("div",{style:{height:4,borderRadius:2,background:c.sv,marginBottom:16,overflow:"hidden"}},
+      React.createElement("div",{style:{height:"100%",width:((ci+1)/tr.dt.length*100)+"%",background:c.pr,borderRadius:2,transition:"width .3s"}})
+    ),
+    React.createElement("div",{style:{padding:16,borderRadius:14,background:c.sf,border:"1px solid "+c.pr+"33",marginBottom:16,lineHeight:1.6,fontSize:15,whiteSpace:"pre-wrap"}},cas.s),
+    cas.o.map((o,i)=>{
+      const isSel=fb?.i===i,isOk=fb?.ok&&isSel,isBad=!fb?.ok&&isSel,isAns=fb&&(tr.sm==="i"?o.inv:o.ok);
+      let bg=c.sf,bd=c.cb;
+      if(isOk||(fb?.ok&&isAns)){bg=c.cob;bd=c.cod;}
+      if(isBad){bg=c.icb;bd=c.icd;}
+      return React.createElement("div",{key:i,style:{marginBottom:10}},
+        React.createElement("button",{onClick:()=>pick(tr,i),disabled:!!fb,style:{width:"100%",padding:14,borderRadius:12,background:bg,border:"1.5px solid "+bd,textAlign:"left",fontSize:14,lineHeight:1.5,color:c.tx,cursor:fb?"default":"pointer",transition:"all .2s",opacity:fb&&!isSel&&!isAns?.5:1}},
+          o.g&&React.createElement("span",{style:{fontSize:11,fontWeight:600,color:isOk||(fb?.ok&&isAns)?c.co:c.tm,marginBottom:4,display:"block"}},o.g),
+          o.t
+        ),
+        fb&&(isSel||(fb.ok&&isAns))&&React.createElement("div",{style:{padding:"8px 14px",fontSize:13,color:isOk||(fb.ok&&isAns)?c.co:c.ic,lineHeight:1.5,marginTop:4}},(isOk||(fb.ok&&isAns)?"✓ ":"✗ ")+o.e)
+      );
+    }),
+    fb?.ok&&React.createElement("button",{onClick:next,style:{width:"100%",padding:14,borderRadius:12,background:c.pr,color:c.op,border:"none",fontSize:16,fontWeight:600,cursor:"pointer",marginTop:8}},(ci+1>=tr.dt.length?s.cm:s.nx)+" →")
+  );
+}
+
+// ═══ MARATHON ═══
+function Marathon({lang,c,s}){
+  const[scr,setScr]=useState("cal");
+  const[sel,setSel]=useState(1);
+  const[md,setMd2]=useState(()=>ld("mar",{}));
+  const[a1,setA1]=useState("");
+  const[a2,setA2]=useState("");
+  const days=MD[lang];
+
+  useEffect(()=>{sv("mar",md)},[md]);
+
+  const cdSet=useMemo(()=>{const s2=new Set();Object.entries(md).forEach(([k,v])=>{if(v.dn)s2.add(+k)});return s2},[md]);
+  const cur=useMemo(()=>{for(let i=1;i<=30;i++)if(!cdSet.has(i))return i;return 31},[cdSet]);
+  const isD=d=>cdSet.has(d);
+  const isL=d=>d>cur;
+
+  const open=d=>{if(isL(d))return;const sv2=md[d];setA1(sv2?.a1||"");setA2(sv2?.a2||"");setSel(d);setScr("det")};
+  const comp=()=>{setMd2(p=>({...p,[sel]:{dn:1,a1,a2,at:Date.now()}}));setScr("cal")};
+  const reset=()=>{if(confirm(lang==="ru"?"Сбросить прогресс?":"Reset progress?"))setMd2({})};
+
+  const dc=d=>d==="ey"?c.co:d==="md"?"#E6AD2B":c.ic;
+  const cl=cx=>s[cx]||cx;
+  const wk=lang==="ru"?["Пн","Вт","Ср","Чт","Пт","Сб","Вс"]:["Mo","Tu","We","Th","Fr","Sa","Su"];
+
+  if(scr==="cal"){
+    const weeks=[];for(let i=0;i<30;i+=7)weeks.push(Array.from({length:Math.min(7,30-i)},(_,j)=>i+j+1));
+    return React.createElement("div",{style:{padding:"20px 16px"}},
+      React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}},
+        React.createElement("div",null,
+          React.createElement("h1",{style:{fontSize:24,fontWeight:700,color:c.pr,margin:0}},lang==="ru"?"Практикуй":"Practice"),
+          React.createElement("p",{style:{fontSize:13,color:c.ts,margin:"2px 0 0"}},s.d+" "+Math.min(cur,30)+" "+s.of+" 30")
+        ),
+        React.createElement("div",{style:{display:"flex",gap:8}},
+          React.createElement("button",{onClick:()=>setScr("dia"),style:{padding:"8px 14px",borderRadius:10,border:"1px solid "+c.cb,background:c.sf,color:c.tx,fontSize:13,fontWeight:500,cursor:"pointer"}},"📖 "+s.dy),
+          cdSet.size>0&&React.createElement("button",{onClick:reset,style:{padding:"8px 10px",borderRadius:10,border:"1px solid "+c.cb,background:c.sf,color:c.tm,fontSize:15,cursor:"pointer"}},s.rs)
+        )
+      ),
+      React.createElement("div",{style:{padding:14,borderRadius:16,background:c.sf,boxShadow:c.cs,border:"1px solid "+c.cb,marginBottom:16}},
+        React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:8}},wk.map(l=>React.createElement("div",{key:l,style:{textAlign:"center",fontSize:11,color:c.tm,fontWeight:500}},l))),
+        weeks.map((w,wi)=>React.createElement("div",{key:wi,style:{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:4}},
+          w.map(d2=>{const dn=isD(d2),lk=isL(d2),isCur=d2===cur;
+            return React.createElement("button",{key:d2,onClick:()=>open(d2),disabled:lk,style:{aspectRatio:"1",borderRadius:10,border:isCur?"2px solid "+c.pr:"1px solid "+(dn?c.cod:"transparent"),background:dn?c.cob:lk?c.sv:"transparent",color:dn?c.co:lk?c.tm:c.tx,fontSize:14,fontWeight:isCur?700:500,cursor:lk?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",opacity:lk?.4:1}},dn?"✓":lk?"🔒":d2)
+          }),
+          Array.from({length:7-w.length}).map((_,i)=>React.createElement("div",{key:"e"+i}))
+        ))
+      ),
+      (()=>{const d2=Math.min(cur,30),info=days[d2-1];if(!info)return null;
+        return React.createElement("div",{onClick:()=>open(d2),style:{padding:16,borderRadius:14,background:c.sf,border:"1px solid "+c.pr+"33",boxShadow:c.cs,cursor:"pointer"}},
+          React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:8}},
+            React.createElement("span",{style:{fontSize:13,fontWeight:600,color:c.pr}},s.d+" "+d2),
+            React.createElement("span",{style:{fontSize:11,padding:"2px 8px",borderRadius:6,background:dc(info.df)+"22",color:dc(info.df),fontWeight:500}},s[info.df]),
+            React.createElement("span",{style:{fontSize:11,padding:"2px 8px",borderRadius:6,background:c.sv,color:c.ts}},cl(info.cx))
+          ),
+          React.createElement("p",{style:{fontSize:14,lineHeight:1.6,color:c.tx,margin:0}},info.tk)
+        )
+      })(),
+      cur>30&&React.createElement("div",{style:{padding:16,borderRadius:14,background:c.cob,border:"1px solid "+c.cod,textAlign:"center",marginTop:16}},
+        React.createElement("span",{style:{fontSize:28}},"🏆"),
+        React.createElement("p",{style:{fontWeight:700,color:c.co,fontSize:18,margin:"8px 0 0"}},s.dn)
+      )
+    );
+  }
+
+  if(scr==="det"){
+    const info=days[sel-1];if(!info)return null;const dn=isD(sel);
+    return React.createElement("div",{style:{padding:"20px 16px"},className:"slide-up"},
+      React.createElement("button",{onClick:()=>setScr("cal"),style:{background:"none",border:"none",color:c.pr,fontSize:15,fontWeight:500,cursor:"pointer",padding:0,marginBottom:16}},"← "+s.bk),
+      React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:12}},
+        React.createElement("span",{style:{fontSize:20,fontWeight:700,color:c.pr}},s.d+" "+sel),
+        React.createElement("span",{style:{fontSize:12,padding:"3px 10px",borderRadius:8,background:dc(info.df)+"22",color:dc(info.df),fontWeight:500}},s[info.df]),
+        React.createElement("span",{style:{fontSize:12,padding:"3px 10px",borderRadius:8,background:c.sv,color:c.ts}},cl(info.cx))
+      ),
+      React.createElement("div",{style:{padding:16,borderRadius:14,background:c.sf,border:"1px solid "+c.pr+"33",marginBottom:20,lineHeight:1.7,fontSize:15}},info.tk),
+      React.createElement("div",{style:{marginBottom:12}},
+        React.createElement("label",{style:{fontSize:13,fontWeight:600,color:c.ts,marginBottom:6,display:"block"}},info.q1),
+        React.createElement("textarea",{value:a1,onChange:e=>setA1(e.target.value),disabled:dn,placeholder:"...",style:{width:"100%",padding:12,borderRadius:12,border:"1px solid "+c.cb,background:c.sf,color:c.tx,fontSize:14,resize:"vertical",minHeight:60,fontFamily:"inherit",boxSizing:"border-box"}})
+      ),
+      React.createElement("div",{style:{marginBottom:20}},
+        React.createElement("label",{style:{fontSize:13,fontWeight:600,color:c.ts,marginBottom:6,display:"block"}},info.q2),
+        React.createElement("textarea",{value:a2,onChange:e=>setA2(e.target.value),disabled:dn,placeholder:"...",style:{width:"100%",padding:12,borderRadius:12,border:"1px solid "+c.cb,background:c.sf,color:c.tx,fontSize:14,resize:"vertical",minHeight:60,fontFamily:"inherit",boxSizing:"border-box"}})
+      ),
+      !dn&&React.createElement("button",{onClick:comp,disabled:!a1.trim()&&!a2.trim(),style:{width:"100%",padding:14,borderRadius:12,background:a1.trim()||a2.trim()?c.pr:c.sv,color:a1.trim()||a2.trim()?c.op:c.tm,border:"none",fontSize:16,fontWeight:600,cursor:a1.trim()||a2.trim()?"pointer":"default"}},s.cm+" ✓"),
+      dn&&React.createElement("div",{style:{padding:12,borderRadius:12,background:c.cob,border:"1px solid "+c.cod,textAlign:"center",color:c.co,fontWeight:500}},"✓ "+s.cd)
+    );
+  }
+
+  if(scr==="dia"){
+    const dd=Object.entries(md).filter(([_,v])=>v.dn).sort(([a],[b])=>+a-+b);
+    return React.createElement("div",{style:{padding:"20px 16px"}},
+      React.createElement("button",{onClick:()=>setScr("cal"),style:{background:"none",border:"none",color:c.pr,fontSize:15,fontWeight:500,cursor:"pointer",padding:0,marginBottom:16}},"← "+s.bk),
+      React.createElement("h2",{style:{fontSize:22,fontWeight:700,color:c.pr,margin:"0 0 16px"}},"📖 "+s.dy),
+      dd.length===0&&React.createElement("p",{style:{color:c.ts,fontSize:14}},lang==="ru"?"Пока пусто.":"Nothing here yet."),
+      dd.map(([dn2,data])=>{const info=days[+dn2-1];
+        return React.createElement("div",{key:dn2,style:{padding:14,borderRadius:14,background:c.sf,border:"1px solid "+c.cb,marginBottom:12}},
+          React.createElement("div",{style:{fontSize:14,fontWeight:600,color:c.pr,marginBottom:6}},s.d+" "+dn2),
+          React.createElement("div",{style:{fontSize:13,color:c.ts,marginBottom:8,lineHeight:1.5}},info?.tk),
+          data.a1&&React.createElement("div",{style:{fontSize:13,color:c.tx,marginBottom:4}},React.createElement("strong",null,info?.q1+" "),data.a1),
+          data.a2&&React.createElement("div",{style:{fontSize:13,color:c.tx}},React.createElement("strong",null,info?.q2+" "),data.a2)
+        )
+      })
+    );
+  }
+  return null;
+}
+
+ReactDOM.render(React.createElement(App),document.getElementById("root"));
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
